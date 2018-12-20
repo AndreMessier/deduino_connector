@@ -8,13 +8,12 @@ namespace DEDuino
 {
     public class AppState
     {
-        public AppState(ref string cautionPanelVersion, ref char serialBuffer)
+        public AppState(string cautionPanelVersion)
         {
             this.IsClosing = false;
             this.BMS432 = false;
             this.JshepCP = false;
-            this.CautionPanelVer = cautionPanelVersion;
-            this.SerialBuffer = serialBuffer;
+            this.CautionPanelVer = cautionPanelVersion;            
         }
 
         public bool IsClosing

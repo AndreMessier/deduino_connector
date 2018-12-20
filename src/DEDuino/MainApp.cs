@@ -33,27 +33,22 @@ namespace DEDuino
 
     public partial class MainWindow : Form
     {
-        #region Declerations
+        #region Declarations
         public const string URLBase = @"http://files.108vfs.org/deduino/"; // URL for Updater
         public F4SharedMem.Reader BMSreader = new F4SharedMem.Reader();
         public FlightData BMSdata = new FlightData();        
-        public SerialComm dedDevice = new SerialComm();
+        public ISerialComm dedDevice = new SerialComm();
         public char SerialBuffer;
-        const int BAUDRATE = 9600;
-        const short BAUDRATE_MULTIPLIER = 12;
-        const short UNO_BAUDRATE_MULTIPLIER = 3;
-        //public bool isClosing = false;
         private AppState appState;
-        private Functions functions;
-        public byte[] blankByte = new byte[1];
-        private string CautionPanelVer = Properties.Settings.Default.CautionPanel;
-        private bool BMS432 = Properties.Settings.Default.BMS432;
-        private bool JshepCP = Properties.Settings.Default.JshepCP;
+        private Functions functions;        
         #endregion
 
         public MainWindow()
         {
-            appState = new AppState(ref CautionPanelVer, ref SerialBuffer);
+            appState = new AppState(Properties.Settings.Default.CautionPanel);
+            appState.CautionPanelVer = Properties.Settings.Default.CautionPanel;
+            appState.BMS432 = Properties.Settings.Default.BMS432;
+            appState.JshepCP = Properties.Settings.Default.JshepCP;
             functions = new Functions(dedDevice, ref appState, ref BMSreader, ref BMSdata);
 
             InitializeComponent();
@@ -231,19 +226,19 @@ namespace DEDuino
         {
             if (radioButtonCautionNew.Checked)
             {
-                CautionPanelVer = "new";
+                appState.CautionPanelVer = "new";
             }
             else if (radioButtonCautionOld.Checked)
             {
-                CautionPanelVer = "old";
+                appState.CautionPanelVer = "old";
             }
-            Properties.Settings.Default.CautionPanel = CautionPanelVer;
+            Properties.Settings.Default.CautionPanel = appState.CautionPanelVer;
             Properties.Settings.Default.Save(); // Save settings
         }
 
         private void Checkbox_BMS432_CheckedChanged(object sender, EventArgs e)
         {
-            BMS432 = Checkbox_BMS432.Checked;
+            appState.BMS432 = Checkbox_BMS432.Checked;
             Properties.Settings.Default.BMS432 = Checkbox_BMS432.Checked;
             Properties.Settings.Default.Save(); // Save settings
 
@@ -258,8 +253,8 @@ namespace DEDuino
 
         private void checkBox_JshepCP_CheckedChanged(object sender, EventArgs e)
         {
-            JshepCP = checkBox_JshepCP.Checked;
-            Properties.Settings.Default.JshepCP = JshepCP;
+            appState.JshepCP = checkBox_JshepCP.Checked;
+            Properties.Settings.Default.JshepCP = appState.JshepCP;
             Properties.Settings.Default.Save();
         }
         private void SystrayMenuItemShow_Click(object sender, EventArgs e)
