@@ -20,10 +20,10 @@ namespace DEDuino
     {
         private ISerialComm serialComm;
         private AppState appState;
-        private F4SharedMem.Reader BMSreader;
+        private IBMSReader BMSreader;
         private FlightData BMSdata;
 
-        public DedFunctions(ISerialComm serialComm, ref AppState appState, ref F4SharedMem.Reader BMSreader, ref FlightData flightData)
+        public DedFunctions(ISerialComm serialComm, ref AppState appState, ref IBMSReader BMSreader, ref FlightData flightData)
         {
             this.serialComm = serialComm;
             this.appState = appState;

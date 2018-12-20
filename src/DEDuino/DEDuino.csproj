@@ -73,9 +73,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppState.cs" />
+    <Compile Include="BMSReaderWrapper.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="DeduinoHelpers.cs" />
     <Compile Include="DedFunctions.cs" />
+    <Compile Include="IBMSReader.cs" />
     <Compile Include="ISerialComm.cs" />
     <Compile Include="MainApp.cs">
       <SubType>Form</SubType>

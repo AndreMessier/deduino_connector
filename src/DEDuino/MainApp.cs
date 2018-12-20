@@ -35,7 +35,8 @@ namespace DEDuino
     {
         #region Declarations
         public const string URLBase = @"http://files.108vfs.org/deduino/"; // URL for Updater
-        public F4SharedMem.Reader BMSreader = new F4SharedMem.Reader();
+        public F4SharedMem.Reader realBMSreader = new F4SharedMem.Reader();
+        public IBMSReader BMSreader;
         public FlightData BMSdata = new FlightData();        
         public ISerialComm dedDevice = new SerialComm();
         public char SerialBuffer;
@@ -45,6 +46,7 @@ namespace DEDuino
 
         public MainWindow()
         {
+            BMSreader = new BMSReaderWrapper(realBMSreader);  // we should now be able to stub in a fake BMS reader for testing purposes.
             appState = new AppState(Properties.Settings.Default.CautionPanel);
             appState.CautionPanelVer = Properties.Settings.Default.CautionPanel;
             appState.BMS432 = Properties.Settings.Default.BMS432;
