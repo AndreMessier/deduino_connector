@@ -1,58 +1,56 @@
-﻿/*
-DEDuino
- * Software connector to allow Transmission of data to supported Arduino code
- * Written by Uri Ben-Avrahm - 2014
- * http://pits.108vfs.org
-*/
-
+﻿using F4SharedMem;
+using F4SharedMem.Headers;
+using Microsoft.Win32;
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.Diagnostics;
+using System.Drawing;
+using System.IO.Ports;
 using System.Linq;
+using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.IO.Ports;
-using System.Runtime.InteropServices;
-using System.Threading;
-using System.Collections;
-using System.Net;
-using Microsoft.Win32;
-using F4SharedMem;
-using F4SharedMem.Headers;
-
 
 namespace DEDuino
 {
-
-    public partial class MainWindow
+    public class Functions
     {
+        private ISerialComm serialComm;
+        private AppState appState;
+        private F4SharedMem.Reader BMSreader;
+        private FlightData BMSdata;
 
-        void CheckPorts() //Function scans computer for available COM ports and puts them into the dropdown box for selection
+        public Functions(ISerialComm serialComm, ref AppState appState, ref F4SharedMem.Reader BMSreader, ref FlightData flightData)
         {
-            var AvailablePorts = SerialPort.GetPortNames(); // put available ports into variable
-            comboBoxComSelect.DataSource = AvailablePorts; //insert into drop box
+            this.serialComm = serialComm;
+            this.appState = appState;
+            this.BMSreader = BMSreader;
+            this.BMSdata = flightData;
         }
 
-        public bool SerialInit()
+        // was CheckPorts
+        void updateAvailablePorts(ref ComboBox comboBox) //Function scans computer for available COM ports and puts them into the dropdown box for selection
+        {
+            var AvailablePorts = serialComm.CheckPorts(); // put available ports into variable
+            comboBox.DataSource = AvailablePorts; //insert into drop box
+        }
+
+        public bool SerialInit(ref AppState appState, bool isUno, string comPort, ref ToolStripStatusLabel toolStripStatus)
         /*
         * This functions handles opening and closing of serial connections
         */
         {
-            if (dedDevice.IsOpen) //if serial connection is active
+            if (serialComm.IsOpen) //if serial connection is active
             {
                 #region SerialDisconnectLogic
                 try
                 {
-                    isClosing = true; // set "closing flag"
-                    Thread.Sleep(200); // wait for all interrupts for finish processing
-                    dedDevice.Close(); // close the connection
-                    return true;
+                    return serialComm.CloseConnection(ref appState);
                 }
-                catch (InvalidCastException e) // if excetion occurs
+                catch (InvalidCastException e) // if exception occurs
                 {
                     return false;
                 }
@@ -60,34 +58,27 @@ namespace DEDuino
             }
             else // if serial connection is not currently open
             {
-                if (!string.IsNullOrEmpty(comboBoxComSelect.SelectedValue.ToString())) // make sure COM port is selected once more (better safe then sorry)
+                if (!string.IsNullOrEmpty(comPort)) // make sure COM port is selected once more (better safe then sorry)
                 {
                     #region SerialConnectLogic
                     try
                     {
-                        dedDevice.PortName = comboBoxComSelect.SelectedValue.ToString(); //Get portname
-                        dedDevice.RtsEnable = true; // set RTS flag
-                        dedDevice.Handshake = Handshake.None; // Disable handshake
-                        //dedDevice.DiscardNull = true;
-                        if (checkBox_isUno.Checked) // if We use Arduino Uno (or similar snail)
+                        var baudRate = Constants.BAUDRATE * Constants.BAUDRATE_MULTIPLIER;
+                        if (isUno) // if We use Arduino Uno (or similar snail)
                         {
-                            dedDevice.BaudRate = BAUDRATE * UNO_BAUDRATE_MULTIPLIER; // Set baud rate to "Uno" speed - because it's slow as F#@$
+                            baudRate = Constants.BAUDRATE * Constants.UNO_BAUDRATE_MULTIPLIER; // Set baud rate to "Uno" speed - because it's slow as F#@$                        
+                        }
 
-                            //dedDevice.DtrEnable = true;
-                        }
-                        else // using a capable board
-                        {
-                            dedDevice.BaudRate = BAUDRATE * BAUDRATE_MULTIPLIER;
-                        }
-                        //dedDevice.RtsEnable = true; 
-                        dedDevice.DataReceived += new SerialDataReceivedEventHandler(dedDevice_DataReceived); // Setup serial interrup rutine - that is what will actually do the work
-                        isClosing = false; // set closing flag to off
-                        dedDevice.Open(); // Open Serial connection
-                        if (dedDevice.IsOpen) // if succeded
+                        var isOpen = serialComm.OpenConnection(comPort, ref appState, baudRate, dedDevice_DataReceived);
+                        if (isOpen) // if succeded
                         {
                             initVars(); //initiallize the Falcon variables
+                            return true;
                         }
-                        return true;
+                        else
+                        {
+                            return false;
+                        }
                     }
                     catch (InvalidCastException e) //if try fails.
                     {
@@ -97,8 +88,8 @@ namespace DEDuino
                 }
                 else // no device is selected
                 {
-                    toolStripStatusComConnection.Text = "No Device Selected";
-                    toolStripStatusComConnection.BackColor = Color.Orange;
+                    toolStripStatus.Text = "No Device Selected";
+                    toolStripStatus.BackColor = Color.Orange;
                     return false;
                 }
             }
@@ -134,12 +125,12 @@ namespace DEDuino
                 length = sendThis.Length;
             }
             byte[] sendBytes = Encoding.GetEncoding(1252).GetBytes(sendThis);
-            dedDevice.Write(sendBytes, 0, length);
+            serialComm.Write(sendBytes, 0, length);
         }
 
         private void sendBytes(byte[] sendThis, int length)
         {
-            dedDevice.Write(sendThis, 0, length);
+            serialComm.Write(sendThis, 0, length);
         }
 
         public string FuelFlowConvert(float FuelFlow)
@@ -153,10 +144,13 @@ namespace DEDuino
          * Function recives incoming data 
          */
         {
-            if (!isClosing)// if we are not in a closing state to your thing
+            SerialPort sp = (SerialPort)sender;
+            byte[] blankByte = new byte[1];
+
+            if (!appState.IsClosing)// if we are not in a closing state to your thing
             {
                 #region DataProcessingLogic
-                int buffersize = dedDevice.BytesToRead;
+                int buffersize = sp.BytesToRead;
                 SpinWait sw = new SpinWait();
                 //Debug.Print("-----");
                 //Debug.Print("buff: " + buffersize.ToString());
@@ -167,12 +161,12 @@ namespace DEDuino
                 char[] s = new char[buffersize];
                 for (short i = 0; i < s.Length; i++)
                 {
-                    s[i] = (char)dedDevice.ReadByte();
+                    s[i] = (char)sp.ReadByte();
                 }
 
                 byte[] ResponseByte = new byte[1];
                 bool PowerOn;
-                if (BMS432)
+                if (appState.BMS432)
                 {
                     PowerOn = BMSreader.IsFalconRunning;
                 }
@@ -191,7 +185,7 @@ namespace DEDuino
                         try
                         {
                             //Debug.Print("Number only");
-                            mode = SerialBuffer;
+                            mode = appState.SerialBuffer;
                             LineNum = ushort.Parse(s[0].ToString());
                         }
                         catch
@@ -205,7 +199,7 @@ namespace DEDuino
                         {
                             //Debug.Print("letter only");
                             mode = s[0]; // mode is the first character from the serial string
-                            SerialBuffer = mode;
+                            appState.SerialBuffer = mode;
                             LineNum = 255;
                             FalconUpdate();
                         }
@@ -250,9 +244,9 @@ namespace DEDuino
                     #region DoWork
                     case 'R': // Recive RDY call from arduino
                         //Debug.Print("buff: " + buffersize.ToString());
-                        dedDevice.DiscardInBuffer();
+                        serialComm.DiscardInBuffer();
                         sendLine("G", 1); // if caught sent back GO command
-                        dedDevice.DiscardOutBuffer();
+                        serialComm.DiscardOutBuffer();
                         //MessageBox.Show("R");
                         break; // exit the interrupt
                     case 'U': // Recive UPDATE commant from Arduino - This is not used, but retained for bawards compatibility
@@ -273,10 +267,10 @@ namespace DEDuino
                             }
                         }
                         break;
-                        #endregion
+                    #endregion
                     case 'd': //Revice DED request from Arduino - requers reciving D and Number of line
                         #region DED
-                        SerialBuffer = 'd';
+                        appState.SerialBuffer = 'd';
                         if (LineNum == 255)
                         {
                             break;
@@ -304,7 +298,7 @@ namespace DEDuino
                             }
                         }
                         break;
-                        #endregion
+                    #endregion
                     case 'P':
                         #region PFL_Legacy
                         if (PowerOn && LineNum >= 0 && LineNum < 5)
@@ -320,10 +314,10 @@ namespace DEDuino
                             }
                         }
                         break;
-                        #endregion
+                    #endregion
                     case 'p':
                         #region PFL
-                        SerialBuffer = 'p';
+                        appState.SerialBuffer = 'p';
                         if (LineNum == 255)
                         {
                             break;
@@ -351,10 +345,10 @@ namespace DEDuino
                             }
                         }
                         break;
-                        #endregion
+                    #endregion
                     case 'M':
                         #region CMDS
-                        SerialBuffer = 'M';
+                        appState.SerialBuffer = 'M';
                         if (LineNum == 255)
                         {
                             break;
@@ -369,7 +363,7 @@ namespace DEDuino
                         }
 
                         break;
-                        #endregion
+                    #endregion
                     case 'F':
                         #region FuelFlow
 
@@ -390,7 +384,7 @@ namespace DEDuino
                             sendLine("0".PadRight(5, '0'), 5);
                         }
                         break;
-                        #endregion
+                    #endregion
                     case 'A':
                         #region Indexers
                         blankByte[0] = (byte)0;
@@ -403,13 +397,13 @@ namespace DEDuino
                             sendBytes(blankByte, 1);
                         }
                         break;
-                        #endregion
+                    #endregion
                     case 'C':
                         #region CautionPanel
                         blankByte[0] = (byte)0;
                         if (PowerOn)
                         {
-                            sendBytes(MakeCautionPanel(CautionPanelVer), 5); // types are "old" and "new", default is "new"                          
+                            sendBytes(MakeCautionPanel(appState.CautionPanelVer), 5); // types are "old" and "new", default is "new"                          
                         }
                         else
                         {
@@ -417,7 +411,7 @@ namespace DEDuino
                             sendBytes(blankByte, 1);
                         }
                         break;
-                        #endregion
+                    #endregion
                     case 'G':
                         #region glareshield
                         blankByte[0] = (byte)0;
@@ -432,12 +426,12 @@ namespace DEDuino
 
                         }
                         break;
-                        #endregion
+                    #endregion
                     case 'T':
                         #region TWP
                         sendBytes(blankByte, 1);
                         break;
-                        #endregion
+                    #endregion
                     case 'E':
                         #region Engine
                         if (PowerOn)
@@ -455,7 +449,7 @@ namespace DEDuino
 
                         }
                         break;
-                        #endregion
+                    #endregion
                     case 'S':
                         #region Speedbreaks
                         if (PowerOn)
@@ -470,11 +464,16 @@ namespace DEDuino
                         #endregion
 
                 }
-                    #endregion
+                #endregion
                 #endregion
                 //dedDevice.DiscardInBuffer();
                 //dedDevice.DiscardOutBuffer();
             }
+        }
+
+        private bool CheckLight(object flying)
+        {
+            throw new NotImplementedException();
         }
 
         private byte[] MakeAoaLight()
@@ -589,7 +588,7 @@ namespace DEDuino
                         #endregion
                         break;
                 }
-                if (JshepCP)
+                if (appState.JshepCP)
                 {
                     // Shep's CP is total non-sense as far as bit order goes.. put stuff in order for transmission
                     BitArray ShepCP = new BitArray(40, false);
@@ -756,7 +755,7 @@ namespace DEDuino
                 }
 
             }
-            if (BMS432)
+            if (appState.BMS432)
             {
                 return Encoding.GetEncoding(1252).GetBytes(NormLine, 1, 24);
             }
@@ -881,7 +880,7 @@ namespace DEDuino
          */
         {
             byte[] result = new byte[1];
-            if (!CheckLight(PowerBits.BusPowerEmergency) && !BMS432) //if emergency bus is down - speedbreaks indicator is INOP
+            if (!CheckLight(PowerBits.BusPowerEmergency) && ! appState.BMS432) //if emergency bus is down - speedbreaks indicator is INOP
             {
                 result[0] = 1;
             }
@@ -896,16 +895,14 @@ namespace DEDuino
             return result;
         }
 
-        private void CloseApp()
+        public void CloseApp()
         {
             Properties.Settings.Default.Save(); // Save settings before closing app
-            if (dedDevice.IsOpen)
+            if (serialComm.IsOpen)
             {
                 try
                 {
-                    isClosing = true;
-                    Thread.Sleep(200);
-                    dedDevice.Close();
+                    serialComm.CloseConnection(ref appState);
                     Application.Exit();
                 }
                 catch (InvalidCastException e)
@@ -919,7 +916,7 @@ namespace DEDuino
             }
         }
 
-        private bool onStart(bool SetStart = false, bool startValue = true)
+        public bool OnStart(bool SetStart = false, bool startValue = true)
         {
             RegistryKey rkApp = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
 
@@ -948,7 +945,7 @@ namespace DEDuino
                 }
             }
         }
-        private string checkVersion()
+        public string checkVersion(string urlBase, ref ToolStripStatusLabel statusVersionInfo)
         //        async Task<string> checkVersion()
         {
             //HasCheckedVersion = true;
@@ -959,7 +956,7 @@ namespace DEDuino
             {
                 WebClient wc = new WebClient();
                 wc.Headers.Add("user-agent", "UI_Client_" + Application.ProductVersion);
-                string remote = wc.DownloadString(@URLBase + "version/0.0.1/");
+                string remote = wc.DownloadString(@urlBase + "version/0.0.1/");
                 Version remotever = new Version(remote);
 
                 if (localver < remotever)
@@ -970,7 +967,7 @@ namespace DEDuino
                         string ProgramPathTmp = Application.ExecutablePath + ".tmp";
                         WebClient GetUpdate = new WebClient();
                         GetUpdate.Headers.Add("user-agent", "DEDuino_" + Application.ProductVersion);
-                        GetUpdate.DownloadFile(@URLBase + "download/0.0.1/DEDuino.exe", ProgramPathTmp);
+                        GetUpdate.DownloadFile(@urlBase + "download/0.0.1/DEDuino.exe", ProgramPathTmp);
                         ProcessStartInfo updater = new ProcessStartInfo();
                         updater.Arguments = "/C ping 127.0.0.1 -n 2 > Nul & del \"" + ProgramPath + "\" & move \"" + ProgramPathTmp + "\" \"" + ProgramPath + "\" & \"" + ProgramPath + "\"";
                         updater.WindowStyle = ProcessWindowStyle.Hidden;
@@ -979,14 +976,14 @@ namespace DEDuino
                         Process.Start(updater);
                         Environment.Exit(0);
                     }
-                    StatusVersioninfo.Text = "Version: " + Application.ProductVersion;
+                    statusVersionInfo.Text = "Version: " + Application.ProductVersion;
                     //return;
                     return "Version: " + Application.ProductVersion;
 
                 }
                 else if (localver > remotever)
                 {
-                    StatusVersioninfo.Text = Application.ProductVersion + "-BETA";
+                    statusVersionInfo.Text = Application.ProductVersion + "-BETA";
                     return Application.ProductVersion + "-BETA";
                 }
                 else
@@ -1004,27 +1001,6 @@ namespace DEDuino
             }
         }
 
-        private void ResetTheBoard()
-        {
-            checkBox_isUno.Checked = DEDuino.Properties.Settings.Default.isUno;
-            comboBoxComSelect.Text = DEDuino.Properties.Settings.Default.COMport;
-            Checkbox_BMS432.Checked = DEDuino.Properties.Settings.Default.BMS432;
-            checkBox_onStartup.Checked = onStart(SetStart: false);
-            checkBox_JshepCP.Checked = DEDuino.Properties.Settings.Default.JshepCP;
-            if (checkBox_onStartup.Checked)
-            {
-                this.WindowState = FormWindowState.Minimized;
-                this.ShowInTaskbar = false;
-            }
-            if (Properties.Settings.Default.CautionPanel == "new")
-            {
-                radioButtonCautionNew.Checked = true;
-            }
-            else
-            {
-                radioButtonCautionOld.Checked = true;
-            }
-        }
-
+        
     }
 }

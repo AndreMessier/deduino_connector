@@ -36,13 +36,15 @@ namespace DEDuino
         #region Declerations
         public const string URLBase = @"http://files.108vfs.org/deduino/"; // URL for Updater
         public F4SharedMem.Reader BMSreader = new F4SharedMem.Reader();
-        public FlightData BMSdata = new FlightData();
-        public SerialPort dedDevice = new SerialPort();
+        public FlightData BMSdata = new FlightData();        
+        public SerialComm dedDevice = new SerialComm();
         public char SerialBuffer;
         const int BAUDRATE = 9600;
         const short BAUDRATE_MULTIPLIER = 12;
         const short UNO_BAUDRATE_MULTIPLIER = 3;
-        public bool isClosing = false;
+        //public bool isClosing = false;
+        private AppState appState;
+        private Functions functions;
         public byte[] blankByte = new byte[1];
         private string CautionPanelVer = Properties.Settings.Default.CautionPanel;
         private bool BMS432 = Properties.Settings.Default.BMS432;
@@ -51,14 +53,17 @@ namespace DEDuino
 
         public MainWindow()
         {
+            appState = new AppState(ref CautionPanelVer, ref SerialBuffer);
+            functions = new Functions(dedDevice, ref appState, ref BMSreader, ref BMSdata);
+
             InitializeComponent();
             Thread updater = new System.Threading.Thread(delegate()
            {
-               StatusVersioninfo.Text = checkVersion().ToString(); // Check if a new version is available
+               StatusVersioninfo.Text = functions.checkVersion(URLBase, ref StatusVersioninfo); // Check if a new version is available
            });
             updater.Start();
             ResetTheBoard();
-            CheckPorts(); //Scan for Available serial port on the computer           
+            dedDevice.CheckPorts(); //Scan for Available serial port on the computer           
         }
 
         private void buttonStart_Click(object sender, EventArgs e)
@@ -70,7 +75,7 @@ namespace DEDuino
             if (dedDevice.IsOpen) //if serial connection is open - close it.
             {
                 #region DisconnectSerial
-                if (SerialInit()) //Issue SerialPort disconnect via "serialinit" function 
+                if (functions.SerialInit(ref appState, checkBox_isUno.Checked, comboBoxComSelect.SelectedValue.ToString(), ref toolStripStatusComConnection)) //Issue SerialPort disconnect via "serialinit" function 
                 { // if disconnection was successful - reset the button to starting position
                     toolStripStatusComConnection.Text = "Ready";
                     toolStripStatusComConnection.BackColor = SystemColors.Control;
@@ -94,7 +99,7 @@ namespace DEDuino
                 if (!dedDevice.IsOpen && SerialPort.GetPortNames().Contains(comboBoxComSelect.SelectedValue))
                 {
                     #region ConnectSerial
-                    if (SerialInit()) //issue Connect command
+                    if (functions.SerialInit(ref appState, checkBox_isUno.Checked, comboBoxComSelect.SelectedValue.ToString(), ref toolStripStatusComConnection)) //issue Connect command
                     { //if connection succeded - change button to allow disconnect
                         toolStripStatusComConnection.Text = "Connected";
                         toolStripStatusComConnection.BackColor = Color.Green;
@@ -128,12 +133,12 @@ namespace DEDuino
 
         private void quitToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            CloseApp();
+            functions.CloseApp();
         }
 
         private void refreshCOMListToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            CheckPorts();
+            dedDevice.CheckPorts();
         }
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
@@ -177,7 +182,7 @@ namespace DEDuino
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            CloseApp();
+            functions.CloseApp();
         }
 
         private void MainWindow_Resize(object sender, EventArgs e)
@@ -213,7 +218,7 @@ namespace DEDuino
 
         private void comboBoxComSelect_DropDown(object sender, EventArgs e)
         {
-            CheckPorts();
+            dedDevice.CheckPorts();
         }
 
         private void MainWindow_FormClosing(object sender, FormClosingEventArgs e)
@@ -246,7 +251,7 @@ namespace DEDuino
 
         private void checkBox_onStartup_CheckedChanged(object sender, EventArgs e)
         {
-            onStart(SetStart: true, startValue: checkBox_onStartup.Checked);
+            functions.OnStart(SetStart: true, startValue: checkBox_onStartup.Checked);
             Properties.Settings.Default.onStartup = checkBox_onStartup.Checked;
             Properties.Settings.Default.Save();
         }
@@ -281,6 +286,26 @@ namespace DEDuino
                 this.SystrayMenuItemShow.Text = "Show";
             }
         }
-
+        private void ResetTheBoard()
+        {
+            checkBox_isUno.Checked = DEDuino.Properties.Settings.Default.isUno;
+            comboBoxComSelect.Text = DEDuino.Properties.Settings.Default.COMport;
+            Checkbox_BMS432.Checked = DEDuino.Properties.Settings.Default.BMS432;
+            checkBox_onStartup.Checked = functions.OnStart(SetStart: false);
+            checkBox_JshepCP.Checked = DEDuino.Properties.Settings.Default.JshepCP;
+            if (checkBox_onStartup.Checked)
+            {
+                this.WindowState = FormWindowState.Minimized;
+                this.ShowInTaskbar = false;
+            }
+            if (Properties.Settings.Default.CautionPanel == "new")
+            {
+                radioButtonCautionNew.Checked = true;
+            }
+            else
+            {
+                radioButtonCautionOld.Checked = true;
+            }
+        }
     }
 }
