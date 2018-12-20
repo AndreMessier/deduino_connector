@@ -193,7 +193,7 @@ namespace DEDuino
                 }
                 else
                 {
-                    PowerOn = CheckLight(HsiBits.Flying); // test isFlying bit - if Falcon is in 3D world - this is true
+                    PowerOn = DeduinoHelpers.CheckLight(HsiBits.Flying, BMSdata); // test isFlying bit - if Falcon is in 3D world - this is true
                 }
 
                 char mode; // define "mode" variable
@@ -505,14 +505,14 @@ namespace DEDuino
         {
             BitArray mapping = new BitArray(8, false);
 
-            mapping[7] = CheckLight(LightBits.RefuelDSC); // //RefuelDSC
-            mapping[6] = CheckLight(LightBits.RefuelAR); //RefuelAR
-            mapping[5] = CheckLight(LightBits.RefuelRDY); //RefuelRDY
+            mapping[7] = DeduinoHelpers.CheckLight(LightBits.RefuelDSC, BMSdata); // //RefuelDSC
+            mapping[6] = DeduinoHelpers.CheckLight(LightBits.RefuelAR, BMSdata); //RefuelAR
+            mapping[5] = DeduinoHelpers.CheckLight(LightBits.RefuelRDY, BMSdata); //RefuelRDY
             mapping[4] = false; // blank
             mapping[3] = false; // blank
-            mapping[2] = CheckLight(LightBits.AOABelow); // AOABelow          
-            mapping[1] = CheckLight(LightBits.AOAOn); //AOAOn
-            mapping[0] = CheckLight(LightBits.AOAAbove); //AOAAbove
+            mapping[2] = DeduinoHelpers.CheckLight(LightBits.AOABelow, BMSdata); // AOABelow          
+            mapping[1] = DeduinoHelpers.CheckLight(LightBits.AOAOn, BMSdata); //AOAOn
+            mapping[0] = DeduinoHelpers.CheckLight(LightBits.AOAAbove, BMSdata); //AOAAbove
             byte[] result = new byte[1];
             mapping.CopyTo(result, 0);
             return result;
@@ -527,88 +527,88 @@ namespace DEDuino
         {
             BitArray mapping = new BitArray(40, false);
             byte[] result = new byte[mapping.Length];
-            if (!CheckLight(LightBits.AllLampBitsOn) && !CheckLight(LightBits2.AllLampBits2On)) //  check if all the lamp bits on LB1 are up. pretty much will only happen when you check lights.  
+            if (!DeduinoHelpers.CheckLight(LightBits.AllLampBitsOn, BMSdata) && !DeduinoHelpers.CheckLight(LightBits2.AllLampBits2On, BMSdata)) //  check if all the lamp bits on LB1 are up. pretty much will only happen when you check lights.  
             { //if "false" we are not in lightcheck - run logic
                 switch (version)
                 {
                     case "new":
                         #region newCautionPanel
                         /// left row (bottom to top)
-                        mapping[31] = CheckLight(LightBits2.AftFuelLow); // AFT FUEL LOW
-                        mapping[30] = CheckLight(LightBits2.FwdFuelLow); // FWD FUEL LOW
+                        mapping[31] = DeduinoHelpers.CheckLight(LightBits2.AftFuelLow, BMSdata); // AFT FUEL LOW
+                        mapping[30] = DeduinoHelpers.CheckLight(LightBits2.FwdFuelLow, BMSdata); // FWD FUEL LOW
                         mapping[29] = false; // ATF NOT ENGAGED
-                        mapping[28] = CheckLight(LightBits.CONFIG); // STORES CONFIG
-                        mapping[27] = CheckLight(LightBits3.cadc); // CADC
-                        mapping[26] = CheckLight(LightBits2.PROBEHEAT); // PROBE HEAT
-                        mapping[25] = CheckLight(LightBits3.Elec_Fault); // ELEC SYS
-                        mapping[24] = CheckLight(LightBits.FLCS); // FLCS FAULT
+                        mapping[28] = DeduinoHelpers.CheckLight(LightBits.CONFIG, BMSdata); // STORES CONFIG
+                        mapping[27] = DeduinoHelpers.CheckLight(LightBits3.cadc, BMSdata); // CADC
+                        mapping[26] = DeduinoHelpers.CheckLight(LightBits2.PROBEHEAT, BMSdata); // PROBE HEAT
+                        mapping[25] = DeduinoHelpers.CheckLight(LightBits3.Elec_Fault, BMSdata); // ELEC SYS
+                        mapping[24] = DeduinoHelpers.CheckLight(LightBits.FLCS, BMSdata); // FLCS FAULT
                         /// mid left row (bottom to top)
                         mapping[23] = false; //blank
-                        mapping[22] = CheckLight(LightBits2.BUC); //BUC
+                        mapping[22] = DeduinoHelpers.CheckLight(LightBits2.BUC, BMSdata); //BUC
                         mapping[21] = false; // EEC
-                        mapping[20] = CheckLight(LightBits.Overheat); // OVERHEAT
+                        mapping[20] = DeduinoHelpers.CheckLight(LightBits.Overheat, BMSdata); // OVERHEAT
                         mapping[19] = false; // INLET ICING
-                        mapping[18] = CheckLight(LightBits2.FUEL_OIL_HOT); // FUEL OIL HOT
-                        mapping[17] = CheckLight(LightBits2.SEC); // SEC
-                        mapping[16] = CheckLight(LightBits.EngineFault); // ENGINE FAULT
+                        mapping[18] = DeduinoHelpers.CheckLight(LightBits2.FUEL_OIL_HOT, BMSdata); // FUEL OIL HOT
+                        mapping[17] = DeduinoHelpers.CheckLight(LightBits2.SEC, BMSdata); // SEC
+                        mapping[16] = DeduinoHelpers.CheckLight(LightBits.EngineFault, BMSdata); // ENGINE FAULT
                         /// mid right row (bottom to top)
                         mapping[15] = false;  //blank
                         mapping[14] = false;  //blank
                         mapping[13] = false; //blank
                         mapping[12] = false; // nuclear
-                        mapping[11] = CheckLight(LightBits.IFF); // IFF
-                        mapping[10] = CheckLight(LightBits.RadarAlt); // Radar ALT
-                        mapping[9] = CheckLight(LightBits.EQUIP_HOT); // EQUIP HOT
-                        mapping[8] = CheckLight(LightBits.Avionics); // Avionics Fault
+                        mapping[11] = DeduinoHelpers.CheckLight(LightBits.IFF, BMSdata); // IFF
+                        mapping[10] = DeduinoHelpers.CheckLight(LightBits.RadarAlt, BMSdata); // Radar ALT
+                        mapping[9] = DeduinoHelpers.CheckLight(LightBits.EQUIP_HOT, BMSdata); // EQUIP HOT
+                        mapping[8] = DeduinoHelpers.CheckLight(LightBits.Avionics, BMSdata); // Avionics Fault
                         /// right row (bottom to top)
                         mapping[7] = false; //blank
                         mapping[6] = false; //blank
-                        mapping[5] = CheckLight(LightBits.CabinPress); // Cabin Press
-                        mapping[4] = CheckLight(LightBits2.OXY_LOW); // Oxy_Low
-                        mapping[3] = CheckLight(LightBits.Hook); // hook
-                        mapping[2] = CheckLight(LightBits2.ANTI_SKID); // anti-skid
-                        mapping[1] = CheckLight(LightBits.NWSFail); // NWS fail
-                        mapping[0] = CheckLight(LightBits2.SEAT_ARM); // Seat not armed
+                        mapping[5] = DeduinoHelpers.CheckLight(LightBits.CabinPress, BMSdata); // Cabin Press
+                        mapping[4] = DeduinoHelpers.CheckLight(LightBits2.OXY_LOW, BMSdata); // Oxy_Low
+                        mapping[3] = DeduinoHelpers.CheckLight(LightBits.Hook, BMSdata); // hook
+                        mapping[2] = DeduinoHelpers.CheckLight(LightBits2.ANTI_SKID, BMSdata); // anti-skid
+                        mapping[1] = DeduinoHelpers.CheckLight(LightBits.NWSFail, BMSdata); // NWS fail
+                        mapping[0] = DeduinoHelpers.CheckLight(LightBits2.SEAT_ARM, BMSdata); // Seat not armed
                         #endregion
                         break;
                     case "old":
                         #region oldCautionPanel
                         /// left row (bottom to top)
-                        mapping[31] = CheckLight(LightBits2.SEC); //SEC
-                        mapping[30] = CheckLight(LightBits.EngineFault); // ENGINE FAULT
+                        mapping[31] = DeduinoHelpers.CheckLight(LightBits2.SEC, BMSdata); //SEC
+                        mapping[30] = DeduinoHelpers.CheckLight(LightBits.EngineFault, BMSdata); // ENGINE FAULT
                         mapping[29] = false; // INLET ICING
-                        mapping[28] = CheckLight(LightBits3.Elec_Fault); // ELEC SYS
-                        mapping[27] = CheckLight(LightBits3.cadc); // CADC
-                        mapping[26] = CheckLight(LightBits3.Lef_Fault); // LE FLAPS
+                        mapping[28] = DeduinoHelpers.CheckLight(LightBits3.Elec_Fault, BMSdata); // ELEC SYS
+                        mapping[27] = DeduinoHelpers.CheckLight(LightBits3.cadc, BMSdata); // CADC
+                        mapping[26] = DeduinoHelpers.CheckLight(LightBits3.Lef_Fault, BMSdata); // LE FLAPS
                         mapping[25] = false; // ADC
-                        mapping[24] = CheckLight(LightBits.FltControlSys); // FLT CONT SYS
+                        mapping[24] = DeduinoHelpers.CheckLight(LightBits.FltControlSys, BMSdata); // FLT CONT SYS
                         /// mid left row (bottom to top)
                         mapping[23] = false; //blank
-                        mapping[22] = CheckLight(LightBits2.SEAT_ARM); // SEAT NOT ARMED
-                        mapping[21] = CheckLight(LightBits2.FUEL_OIL_HOT); // FUEL OIL HOT
-                        mapping[20] = CheckLight(LightBits2.BUC); // BUC
+                        mapping[22] = DeduinoHelpers.CheckLight(LightBits2.SEAT_ARM, BMSdata); // SEAT NOT ARMED
+                        mapping[21] = DeduinoHelpers.CheckLight(LightBits2.FUEL_OIL_HOT, BMSdata); // FUEL OIL HOT
+                        mapping[20] = DeduinoHelpers.CheckLight(LightBits2.BUC, BMSdata); // BUC
                         mapping[19] = false; // EEC
-                        mapping[18] = CheckLight(LightBits.Overheat); // OVERHEAT
-                        mapping[17] = CheckLight(LightBits2.AftFuelLow);// AFT FUEL LOW
-                        mapping[16] = CheckLight(LightBits2.FwdFuelLow); // FWD FUEL LOW
+                        mapping[18] = DeduinoHelpers.CheckLight(LightBits.Overheat, BMSdata); // OVERHEAT
+                        mapping[17] = DeduinoHelpers.CheckLight(LightBits2.AftFuelLow, BMSdata);// AFT FUEL LOW
+                        mapping[16] = DeduinoHelpers.CheckLight(LightBits2.FwdFuelLow, BMSdata); // FWD FUEL LOW
                         /// mid right row (bottom to top)
                         mapping[15] = false; //blank
-                        mapping[14] = CheckLight(LightBits.CONFIG); ; // STORES CONFIG
-                        mapping[15] = CheckLight(LightBits.ECM); // ECM
-                        mapping[13] = CheckLight(LightBits.IFF); // IFF
-                        mapping[11] = CheckLight(LightBits.EQUIP_HOT); // EQUIP HOT
-                        mapping[10] = CheckLight(LightBits.RadarAlt); // RADAR ALT
+                        mapping[14] = DeduinoHelpers.CheckLight(LightBits.CONFIG, BMSdata); ; // STORES CONFIG
+                        mapping[15] = DeduinoHelpers.CheckLight(LightBits.ECM, BMSdata); // ECM
+                        mapping[13] = DeduinoHelpers.CheckLight(LightBits.IFF, BMSdata); // IFF
+                        mapping[11] = DeduinoHelpers.CheckLight(LightBits.EQUIP_HOT, BMSdata); // EQUIP HOT
+                        mapping[10] = DeduinoHelpers.CheckLight(LightBits.RadarAlt, BMSdata); // RADAR ALT
                         mapping[9] = false; // ATF NOT ENGAGED
-                        mapping[8] = CheckLight(LightBits.Avionics); // AVIONICS
+                        mapping[8] = DeduinoHelpers.CheckLight(LightBits.Avionics, BMSdata); // AVIONICS
                         /// right row (bottom to top)
                         mapping[7] = false; //blank
-                        mapping[6] = CheckLight(LightBits2.PROBEHEAT); // PROBE HEAT
+                        mapping[6] = DeduinoHelpers.CheckLight(LightBits2.PROBEHEAT, BMSdata); // PROBE HEAT
                         mapping[5] = false; // NUCLEAR
-                        mapping[4] = CheckLight(LightBits2.OXY_LOW); // OXY_LOW
-                        mapping[3] = CheckLight(LightBits.CabinPress); // CABIN PRESS
-                        mapping[2] = CheckLight(LightBits.NWSFail); // NWS FAILT
-                        mapping[1] = CheckLight(LightBits.Hook); // HOOK
-                        mapping[0] = CheckLight(LightBits2.ANTI_SKID); // ANTI SKID
+                        mapping[4] = DeduinoHelpers.CheckLight(LightBits2.OXY_LOW, BMSdata); // OXY_LOW
+                        mapping[3] = DeduinoHelpers.CheckLight(LightBits.CabinPress, BMSdata); // CABIN PRESS
+                        mapping[2] = DeduinoHelpers.CheckLight(LightBits.NWSFail, BMSdata); // NWS FAILT
+                        mapping[1] = DeduinoHelpers.CheckLight(LightBits.Hook, BMSdata); // HOOK
+                        mapping[0] = DeduinoHelpers.CheckLight(LightBits2.ANTI_SKID, BMSdata); // ANTI SKID
                         #endregion
                         break;
                 }
@@ -692,25 +692,25 @@ namespace DEDuino
 
             #region Generate_glareshield
             // Right side - top then bottom, from left to right
-            mapping[0] = CheckLight(LightBits.ENG_FIRE); // Engine Fire
-            mapping[1] = CheckLight(LightBits2.ENGINE); // Engine
-            mapping[2] = CheckLight(LightBits.HYD); // HYD/OIL Press
-            mapping[3] = CheckLight(LightBits.HYD); // HYD/OIL Press
-            mapping[4] = CheckLight(LightBits.FLCS); // FLCS
-            mapping[5] = CheckLight(LightBits3.DbuWarn); // DBU On
-            mapping[6] = CheckLight(LightBits.T_L_CFG); //TO/LG Config
-            mapping[7] = CheckLight(LightBits.T_L_CFG); //TO/LG Config
-            mapping[8] = CheckLight(LightBits.CAN); // Canopy
-            mapping[9] = CheckLight(LightBits.OXY_BROW); // OXY LOW (Brow)
+            mapping[0] = DeduinoHelpers.CheckLight(LightBits.ENG_FIRE, BMSdata); // Engine Fire
+            mapping[1] = DeduinoHelpers.CheckLight(LightBits2.ENGINE, BMSdata); // Engine
+            mapping[2] = DeduinoHelpers.CheckLight(LightBits.HYD, BMSdata); // HYD/OIL Press
+            mapping[3] = DeduinoHelpers.CheckLight(LightBits.HYD, BMSdata); // HYD/OIL Press
+            mapping[4] = DeduinoHelpers.CheckLight(LightBits.FLCS, BMSdata); // FLCS
+            mapping[5] = DeduinoHelpers.CheckLight(LightBits3.DbuWarn, BMSdata); // DBU On
+            mapping[6] = DeduinoHelpers.CheckLight(LightBits.T_L_CFG, BMSdata); //TO/LG Config
+            mapping[7] = DeduinoHelpers.CheckLight(LightBits.T_L_CFG, BMSdata); //TO/LG Config
+            mapping[8] = DeduinoHelpers.CheckLight(LightBits.CAN, BMSdata); // Canopy
+            mapping[9] = DeduinoHelpers.CheckLight(LightBits.OXY_BROW, BMSdata); // OXY LOW (Brow)
             // Spacing
             mapping[10] = false; //spacer
             //left side - top then bottom, from left to right
-            mapping[11] = CheckLight(LightBits.TF); // TF-FAIL
+            mapping[11] = DeduinoHelpers.CheckLight(LightBits.TF, BMSdata); // TF-FAIL
             mapping[12] = false; //blank
             mapping[13] = false;  //blank
             mapping[14] = false;  //blank
             // MC
-            mapping[15] = CheckLight(LightBits.MasterCaution);  //Master Caution
+            mapping[15] = DeduinoHelpers.CheckLight(LightBits.MasterCaution, BMSdata);  //Master Caution
             #endregion
             mapping.CopyTo(result, 0);
             return result;
@@ -797,11 +797,11 @@ namespace DEDuino
         private string cmdsMakeLine(short line)
         {
             string CMDSLine = "";
-            if (CheckLight(LightBits2.Go) || CheckLight(LightBits2.NoGo)) // if either GO or NOGO flags are on system is on, run logic
+            if (DeduinoHelpers.CheckLight(LightBits2.Go, BMSdata) || DeduinoHelpers.CheckLight(LightBits2.NoGo, BMSdata)) // if either GO or NOGO flags are on system is on, run logic
             {
                 if (line == 0)
                 { // If top line needs to be handled
-                    if (CheckLight(LightBits2.NoGo))
+                    if (DeduinoHelpers.CheckLight(LightBits2.NoGo, BMSdata))
                     { // NoGo bit (5 Chars)
                         CMDSLine += "NO GO";
                     }
@@ -810,7 +810,7 @@ namespace DEDuino
                         CMDSLine += "".PadLeft(5, ' ');
                     }
                     CMDSLine += "".PadLeft(2, ' '); //space between windows (2 chars)
-                    if (CheckLight(LightBits2.Go))
+                    if (DeduinoHelpers.CheckLight(LightBits2.Go, BMSdata))
                     { // Go bit (2 Chars)
                         CMDSLine += "GO";
                     }
@@ -820,7 +820,7 @@ namespace DEDuino
                     }
 
                     CMDSLine += " ".PadLeft(4, ' '); //space between windows (4 chars)
-                    if (CheckLight(LightBits2.Rdy))
+                    if (DeduinoHelpers.CheckLight(LightBits2.Rdy, BMSdata))
                     { // Go bit (12 Chars)
                         CMDSLine += "DISPENSE RDY";
                     }
@@ -831,7 +831,7 @@ namespace DEDuino
                 }
                 else if (line == 1)
                 { // If bottom line is to be handled
-                    if (CheckLight(LightBits2.Degr))
+                    if (DeduinoHelpers.CheckLight(LightBits2.Degr, BMSdata))
                     { // degr  bit (9 Chars)
                         CMDSLine += "AUTO DEGR";
                     }
@@ -841,7 +841,7 @@ namespace DEDuino
                     }
                     CMDSLine += " ".PadLeft(3, ' ');//space between windows (5 chars)
                     // Chaff low
-                    if (CheckLight(LightBits2.ChaffLo))
+                    if (DeduinoHelpers.CheckLight(LightBits2.ChaffLo, BMSdata))
                     { //  (3 Chars)
                         CMDSLine += "LO";
                     }
@@ -865,7 +865,7 @@ namespace DEDuino
 
                     CMDSLine += "".PadLeft(1, ' '); //space between windows (1 chars)
 
-                    if (CheckLight(LightBits2.FlareLo)) //Flare Low
+                    if (DeduinoHelpers.CheckLight(LightBits2.FlareLo, BMSdata)) //Flare Low
                     { // (3 Chars)
                         CMDSLine += "LO";
                     }
@@ -914,11 +914,11 @@ namespace DEDuino
         private byte[] MakeSpeedbreaks()
         {
             byte[] result = new byte[1];
-            if (!CheckLight(PowerBits.BusPowerEmergency) && !appState.BMS432) //if emergency bus is down - speedbreaks indicator is INOP
+            if (!DeduinoHelpers.CheckLight(PowerBits.BusPowerEmergency, BMSdata) && !appState.BMS432) //if emergency bus is down - speedbreaks indicator is INOP
             {
                 result[0] = 1;
             }
-            else if ((CheckLight(LightBits3.SpeedBrake)) && (BMSdata.speedBrake > 0.0)) // if speedbreaks are open
+            else if ((DeduinoHelpers.CheckLight(LightBits3.SpeedBrake, BMSdata)) && (BMSdata.speedBrake > 0.0)) // if speedbreaks are open
             {
                 result[0] = 2;
             }
