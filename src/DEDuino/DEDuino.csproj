@@ -75,7 +75,7 @@
     <Compile Include="AppState.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="DeduinoHelpers.cs" />
-    <Compile Include="Functions.cs" />
+    <Compile Include="DedFunctions.cs" />
     <Compile Include="ISerialComm.cs" />
     <Compile Include="MainApp.cs">
       <SubType>Form</SubType>
@@ -100,6 +100,8 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <None Include="lib\F4SharedMem_2.3.2.tlb" />
+    <None Include="lib\F4SharedMem_3.1.1.tlb" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -136,6 +138,10 @@
     <EmbeddedResource Include="AE_icon_gd.ico" />
     <EmbeddedResource Include="AE_systray2_gd.ico" />
     <EmbeddedResource Include="AE_systray2_gu.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="lib\F4SharedMem_2.3.2.dll" />
+    <Content Include="lib\F4SharedMem_3.1.1.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

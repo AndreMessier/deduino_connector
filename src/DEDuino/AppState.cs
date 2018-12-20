@@ -6,8 +6,13 @@ using System.Threading.Tasks;
 
 namespace DEDuino
 {
+    /// <summary>
+    /// This class is use to pass a few variables that 
+    /// we need to keep track of in various classes.    
+    /// </summary>
     public class AppState
     {
+
         public AppState(string cautionPanelVersion)
         {
             this.IsClosing = false;

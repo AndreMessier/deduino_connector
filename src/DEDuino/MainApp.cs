@@ -40,7 +40,7 @@ namespace DEDuino
         public ISerialComm dedDevice = new SerialComm();
         public char SerialBuffer;
         private AppState appState;
-        private Functions functions;        
+        private DedFunctions dedFunctions;        
         #endregion
 
         public MainWindow()
@@ -49,16 +49,16 @@ namespace DEDuino
             appState.CautionPanelVer = Properties.Settings.Default.CautionPanel;
             appState.BMS432 = Properties.Settings.Default.BMS432;
             appState.JshepCP = Properties.Settings.Default.JshepCP;
-            functions = new Functions(dedDevice, ref appState, ref BMSreader, ref BMSdata);
+            dedFunctions = new DedFunctions(dedDevice, ref appState, ref BMSreader, ref BMSdata);
 
             InitializeComponent();
             Thread updater = new System.Threading.Thread(delegate()
            {
-               StatusVersioninfo.Text = functions.checkVersion(URLBase, ref StatusVersioninfo); // Check if a new version is available
+               StatusVersioninfo.Text = dedFunctions.checkVersion(URLBase, ref StatusVersioninfo); // Check if a new version is available
            });
             updater.Start();
             ResetTheBoard();
-            dedDevice.CheckPorts(); //Scan for Available serial port on the computer           
+            dedFunctions.updateAvailablePorts(ref comboBoxComSelect); //Scan for Available serial port on the computer           
         }
 
         private void buttonStart_Click(object sender, EventArgs e)
@@ -70,7 +70,7 @@ namespace DEDuino
             if (dedDevice.IsOpen) //if serial connection is open - close it.
             {
                 #region DisconnectSerial
-                if (functions.SerialInit(ref appState, checkBox_isUno.Checked, comboBoxComSelect.SelectedValue.ToString(), ref toolStripStatusComConnection)) //Issue SerialPort disconnect via "serialinit" function 
+                if (dedFunctions.SerialInit(ref appState, checkBox_isUno.Checked, comboBoxComSelect.SelectedValue.ToString(), ref toolStripStatusComConnection)) //Issue SerialPort disconnect via "serialinit" function 
                 { // if disconnection was successful - reset the button to starting position
                     toolStripStatusComConnection.Text = "Ready";
                     toolStripStatusComConnection.BackColor = SystemColors.Control;
@@ -94,7 +94,7 @@ namespace DEDuino
                 if (!dedDevice.IsOpen && SerialPort.GetPortNames().Contains(comboBoxComSelect.SelectedValue))
                 {
                     #region ConnectSerial
-                    if (functions.SerialInit(ref appState, checkBox_isUno.Checked, comboBoxComSelect.SelectedValue.ToString(), ref toolStripStatusComConnection)) //issue Connect command
+                    if (dedFunctions.SerialInit(ref appState, checkBox_isUno.Checked, comboBoxComSelect.SelectedValue.ToString(), ref toolStripStatusComConnection)) //issue Connect command
                     { //if connection succeded - change button to allow disconnect
                         toolStripStatusComConnection.Text = "Connected";
                         toolStripStatusComConnection.BackColor = Color.Green;
@@ -128,7 +128,7 @@ namespace DEDuino
 
         private void quitToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            functions.CloseApp();
+            dedFunctions.CloseApp();
         }
 
         private void refreshCOMListToolStripMenuItem_Click(object sender, EventArgs e)
@@ -177,7 +177,7 @@ namespace DEDuino
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            functions.CloseApp();
+            dedFunctions.CloseApp();
         }
 
         private void MainWindow_Resize(object sender, EventArgs e)
@@ -246,7 +246,7 @@ namespace DEDuino
 
         private void checkBox_onStartup_CheckedChanged(object sender, EventArgs e)
         {
-            functions.OnStart(SetStart: true, startValue: checkBox_onStartup.Checked);
+            dedFunctions.OnStart(SetStart: true, startValue: checkBox_onStartup.Checked);
             Properties.Settings.Default.onStartup = checkBox_onStartup.Checked;
             Properties.Settings.Default.Save();
         }
@@ -286,7 +286,7 @@ namespace DEDuino
             checkBox_isUno.Checked = DEDuino.Properties.Settings.Default.isUno;
             comboBoxComSelect.Text = DEDuino.Properties.Settings.Default.COMport;
             Checkbox_BMS432.Checked = DEDuino.Properties.Settings.Default.BMS432;
-            checkBox_onStartup.Checked = functions.OnStart(SetStart: false);
+            checkBox_onStartup.Checked = dedFunctions.OnStart(SetStart: false);
             checkBox_JshepCP.Checked = DEDuino.Properties.Settings.Default.JshepCP;
             if (checkBox_onStartup.Checked)
             {
